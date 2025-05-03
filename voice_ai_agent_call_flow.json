@@ -1,0 +1,273 @@
+{
+    "initial_node": "start",
+    "nodes": {
+      "start": {
+        "role_messages": [
+          {
+            "role": "system",
+            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation. Be warm, respectful, and methodical."
+          }
+        ],
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Start by introducing yourself to the caller and asking for their full name and date of birth. Once both are provided, use verify_identity to confirm. If verified, proceed to collect insurance information."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "verify_identity",
+              "handler": "__function__:verify_identity",
+              "description": "Verify the user's name and birthday before continuing intake.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The caller's full name"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "description": "The caller's date of birth in YYYY-MM-DD format"
+                  }
+                },
+                "required": ["name", "birthday"]
+              },
+              "transition_to": "get_insurance"
+            }
+          }
+        ]
+      },
+      "get_insurance": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Ask for their insurance provider name and payer ID. After collecting this, proceed to ask about referrals."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "record_insurance",
+              "handler": "__function__:record_insurance",
+              "description": "Record the user's insurance provider and payer ID.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "provider_name": {
+                    "type": "string",
+                    "description": "Name of the insurance provider"
+                  },
+                  "payer_id": {
+                    "type": "string",
+                    "description": "Insurance payer ID"
+                  }
+                },
+                "required": ["provider_name", "payer_id"]
+              },
+              "transition_to": "get_referral"
+            }
+          }
+        ]
+      },
+      "get_referral": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Ask if they were referred by a physician, and if so, what is the name of the referring doctor. Then proceed to reason for visit."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "record_referral",
+              "handler": "__function__:record_referral",
+              "description": "Record referral status and referring physician name if applicable.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "has_referral": {
+                    "type": "boolean",
+                    "description": "Whether they were referred"
+                  },
+                  "physician_name": {
+                    "type": "string",
+                    "description": "Referring physician's name (if any)"
+                  }
+                },
+                "required": ["has_referral"]
+              },
+              "transition_to": "get_reason"
+            }
+          }
+        ]
+      },
+      "get_reason": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Ask the patient for the reason they are coming in today. After recording the reason, proceed to address collection."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "record_reason",
+              "handler": "__function__:record_reason",
+              "description": "Record the patient's chief complaint or reason for visit.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Chief medical complaint or reason for visit"
+                  }
+                },
+                "required": ["reason"]
+              },
+              "transition_to": "get_address"
+            }
+          }
+        ]
+      },
+      "get_address": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Ask for their full address. Use validate_address to ensure it's complete. If valid, proceed to collect contact info."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "validate_address",
+              "handler": "__function__:validate_address",
+              "description": "Validate the user's address before proceeding.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "The caller's full home address"
+                  }
+                },
+                "required": ["address"]
+              },
+              "transition_to": "get_contact"
+            }
+          }
+        ]
+      },
+      "get_contact": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Ask for their phone number and optionally an email address. Then proceed to provider scheduling."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "record_contact",
+              "handler": "__function__:record_contact",
+              "description": "Record phone and email contact info.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Phone number"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Email address (optional)"
+                  }
+                },
+                "required": ["phone"]
+              },
+              "transition_to": "get_schedule"
+            }
+          }
+        ]
+      },
+      "get_schedule": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Offer available providers and times. Confirm selection and then proceed to email confirmation."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "schedule_appointment",
+              "handler": "__function__:schedule_appointment",
+              "description": "Schedule an appointment and finalize provider/time selection.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "description": "Name of the provider"
+                  },
+                  "appointment_time": {
+                    "type": "string",
+                    "description": "Scheduled appointment time"
+                  }
+                },
+                "required": ["provider", "appointment_time"]
+              },
+              "transition_to": "confirm_email"
+            }
+          }
+        ]
+      },
+      "confirm_email": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Thank the patient and notify them that confirmation emails will be sent. Use send_email to complete the intake process."
+          }
+        ],
+        "functions": [
+          {
+            "type": "function",
+            "function": {
+              "name": "send_email",
+              "handler": "__function__:send_email",
+              "description": "Send confirmation email to internal staff with appointment details.",
+              "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+              },
+              "transition_to": "end"
+            }
+          }
+        ]
+      },
+      "end": {
+        "task_messages": [
+          {
+            "role": "system",
+            "content": "Thank the patient again for calling Kong Health Clinic. Let them know the appointment is confirmed and end the conversation politely."
+          }
+        ],
+        "functions": [],
+        "post_actions": [
+          {
+            "type": "end_conversation"
+          }
+        ]
+      }
+    }
+  }
+  
