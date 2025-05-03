@@ -76,8 +76,8 @@ CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY")
 CARTESIA_VOICE_ID = os.getenv("CARTESIA_VOICE_ID")
 
 # --- Ollama Configuration ---
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:12b")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
 USE_OLLAMA = os.getenv("USE_OLLAMA", "false").lower() == "true" or not OPENAI_API_KEY
 
 # --- SmartyStreets Address Validation ---
