@@ -40,7 +40,7 @@ This project implements a voice-based AI agent designed to handle simulated pati
     ```
 2.  **Install dependencies:**
     ```bash
-    pip install -r requirements.txt # Assuming a requirements.txt exists or create one
+    pip install -r requirements.txt 
     ```
 3.  **Configure Environment Variables:** Create a `.env` file in the project root and add the necessary API keys and configuration details:
     ```env
@@ -116,3 +116,18 @@ Now, call your Twilio phone number. Twilio will hit the `/voice` endpoint, which
         *   AI Audio -> Sent back to Twilio over WebSocket.
 6.  The conversation continues until the call ends or the agent determines all required information is collected.
 7.  Upon call completion (or potentially triggered by the LLM), an email summary is sent.
+
+## Documentation / Example References
+- [Pipecat Flows - FlowManager](https://docs.pipecat.ai/server/frameworks/flows/pipecat-flows#flowmanager)
+- [FlowManager Editor](https://flows.pipecat.ai/)
+- [Cerebrium AI - Twilio Voice Agent Example](https://docs.cerebrium.ai/v4/examples/twilio-voice-agent)
+- [Pipecat Flows - Static Patient Intake Example](https://github.com/pipecat-ai/pipecat-flows/blob/main/examples/static/patient_intake_openai.py)
+- [Pipecat - Patient Intake Examples](https://github.com/pipecat-ai/pipecat/tree/main/examples/patient-intake)
+- [Pipecat Flows - Dynamic Insurance Example](https://github.com/pipecat-ai/pipecat-flows/blob/main/examples/dynamic/insurance_gemini.py)
+
+## Architecture References
+- [Twilio](https://www.twilio.com/en-us)
+- [Deepgram - Speech-to-Text](https://deepgram.com/product/speech-to-text)
+- [Cartesia - Text-to-Speech](https://cartesia.ai/)
+- [SmartyStreets](https://www.smarty.com/)
+- [Ollama](https://ollama.com/search?c=tools)
