@@ -61,7 +61,7 @@ This project implements a voice-based AI agent designed to handle simulated pati
     # Ollama (Optional, if not using OpenAI or for development)
     USE_OLLAMA=true # Set to true to use Ollama
     OLLAMA_HOST=http://localhost:11434 # Adjust if needed
-    OLLAMA_MODEL=gemma3:12b # Or your preferred model
+    OLLAMA_MODEL=mistral # Or your preferred model (make sure it supports tooling)
 
     # SmartyStreets (For Address Validation)
     SMARTY_AUTH_ID=your_smarty_auth_id
@@ -131,3 +131,6 @@ Now, call your Twilio phone number. Twilio will hit the `/voice` endpoint, which
 - [Cartesia - Text-to-Speech](https://cartesia.ai/)
 - [SmartyStreets](https://www.smarty.com/)
 - [Ollama](https://ollama.com/search?c=tools)
+- [Piper TTS Server](https://github.com/rhasspy/piper/blob/master/src/python_run/README_http.md)
+- [Piper Integration w/ PipeCat](https://docs.pipecat.ai/server/services/tts/piper#piper)
+- [Piper Voices](https://github.com/rhasspy/piper/blob/master/VOICES.md)

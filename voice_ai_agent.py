@@ -17,11 +17,13 @@ import smtplib
 import ssl
 import sys
 import urllib.parse
+from contextlib import asynccontextmanager 
 from email.message import EmailMessage
 from pathlib import Path 
 from typing import Dict, Any 
 
 # Third-Party Imports
+import aiohttp 
 import requests
 import uvicorn
 from dotenv import load_dotenv
@@ -45,6 +47,7 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.serializers.twilio import TwilioFrameSerializer
 from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.services.piper.tts import PiperTTSService 
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.services.ollama.llm import OLLamaLLMService
@@ -75,6 +78,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY")
 CARTESIA_VOICE_ID = os.getenv("CARTESIA_VOICE_ID")
 
+# --- TTS Configuration ---
+USE_LOCAL_TTS = os.getenv("USE_LOCAL_TTS")
+PIPER_TTS_URL = os.getenv("PIPER_TTS_URL", "http://localhost:5000") 
+
 # --- Ollama Configuration ---
 OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
@@ -97,7 +104,23 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8080))
 
-app = FastAPI(title="Voice AI Agent")
+# --- Global State ---
+# Global aiohttp session for Piper TTS
+http_session: aiohttp.ClientSession | None = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create session on startup
+    global http_session
+    http_session = aiohttp.ClientSession()
+    logger.info("Created aiohttp session for Piper TTS.")
+    yield
+    # Close session on shutdown
+    if http_session:
+        await http_session.close()
+        logger.info("Closed aiohttp session.")
+
+app = FastAPI(title="Voice AI Agent", lifespan=lifespan) 
 
 # --- Global Storage (for simplicity, replace with DB in production) ---
 # Added global dict to store call data temporarily
@@ -344,6 +367,7 @@ async def websocket_endpoint(websocket: WebSocket):
     transport = None
     flow_manager = None 
     call_sid = "unknown_call" 
+    global http_session 
 
     try:
         # 1. Initial Twilio Handshake
@@ -392,13 +416,39 @@ async def websocket_endpoint(websocket: WebSocket):
             model="nova-2-phonecall"
         )
 
-        tts = CartesiaTTSService(
-            api_key=CARTESIA_API_KEY,
-            voice_id=CARTESIA_VOICE_ID,
-            model_id="sonic-english",
-            output_format="pcm_s16le", 
-            sample_rate=8000 
-        )
+        # --- Select and Initialize TTS ---
+        if USE_LOCAL_TTS:
+            logger.info(f"Using local Piper TTS service at {PIPER_TTS_URL}")
+            if not http_session:
+                 # This should ideally not happen if lifespan manager works correctly
+                 logger.error("aiohttp session not initialized!")
+                 await websocket.close(code=1011, reason="Internal server error: TTS session not ready.")
+                 return
+            tts = PiperTTSService(
+                base_url=PIPER_TTS_URL,
+                aiohttp_session=http_session,
+                sample_rate=22050
+                # Piper default sample rate might be higher, 
+                # but Twilio expects 8000. Pipecat handles resampling.
+                # Set sample_rate here if your Piper model differs significantly 
+                # or if you encounter issues. Default is often 22050.
+                # sample_rate=8000 
+            )
+        else:
+            logger.info("Using Cartesia TTS service")
+            if not CARTESIA_API_KEY or not CARTESIA_VOICE_ID:
+                logger.error("Cartesia API Key or Voice ID not configured.")
+                await websocket.close(code=1011, reason="Internal server error: TTS not configured.")
+                return
+            tts = CartesiaTTSService(
+                api_key=CARTESIA_API_KEY,
+                voice_id=CARTESIA_VOICE_ID,
+                model_id="sonic-english",
+                output_format="pcm_s16le", 
+                sample_rate=8000 
+            )
+        # --- End TTS Selection ---
+
 
         # 3. Setup Transport with Serializer
         transport = FastAPIWebsocketTransport(

@@ -5,13 +5,13 @@
         "role_messages": [
           {
             "role": "system",
-            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation. Be respectful and methodical. Do not ramble on too much."
+            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation, do not make up functions. Also do not tell the user that you will call a function as that is not necessary for the user to hear, you should just handle that in the background. Be respectful and methodical. Do not ramble on too much."
           }
         ],
         "task_messages": [
           {
             "role": "system",
-            "content": "Start by introducing yourself to the caller and asking for their full name and date of birth. Once both are provided, use the verify_identity function."
+            "content": "Start by introducing yourself to the caller and asking for their full name and date of birth. Do not tell the user a specific format. Once both are provided, use the verify_identity function."
           }
         ],
         "functions": [
@@ -30,7 +30,7 @@
                   },
                   "birthday": {
                     "type": "string",
-                    "description": "The caller's date of birth in YYYY-MM-DD format"
+                    "description": "The caller's date of birth (convert to YYYY-MM-DD format)"
                   }
                 },
                 "required": ["name", "birthday"]
