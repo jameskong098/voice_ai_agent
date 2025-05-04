@@ -493,8 +493,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 pass # Already deleted, possibly by disconnect handler
         if task:
             await task.cancel() # Ensure task is cancelled
-        if transport:
-            await transport.close() # Ensure transport is closed
         # Ensure WebSocket is closed if not already
         if websocket.client_state == websocket.client_state.CONNECTED:
             await websocket.close(code=1000)

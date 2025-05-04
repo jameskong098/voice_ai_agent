@@ -5,13 +5,13 @@
         "role_messages": [
           {
             "role": "system",
-            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation. Be warm, respectful, and methodical."
+            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation. Be respectful and methodical. Do not ramble on too much."
           }
         ],
         "task_messages": [
           {
             "role": "system",
-            "content": "Start by introducing yourself to the caller and asking for their full name and date of birth. Once both are provided, use verify_identity to confirm. If verified, proceed to collect insurance information."
+            "content": "Start by introducing yourself to the caller and asking for their full name and date of birth. Once both are provided, use the verify_identity function."
           }
         ],
         "functions": [
@@ -44,7 +44,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask for their insurance provider name and payer ID. After collecting this, proceed to ask about referrals."
+            "content": "Ask for their insurance provider name and payer ID. After collecting this, use the record_insurance function."
           }
         ],
         "functions": [
@@ -77,7 +77,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask if they were referred by a physician, and if so, what is the name of the referring doctor. Then proceed to reason for visit."
+            "content": "Ask if they were referred by a physician, and if so, what is the name of the referring doctor. Then use the record_referral function."
           }
         ],
         "functions": [
@@ -110,7 +110,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask the patient for the reason they are coming in today. After recording the reason, proceed to address collection."
+            "content": "Ask the patient for the reason they are coming in today. After recording the reason, use the record_reason function."
           }
         ],
         "functions": [
@@ -139,7 +139,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask for their full address. Use validate_address to ensure it's complete. If valid, proceed to collect contact info."
+            "content": "Ask for their full address. Use the validate_address function to ensure it's complete."
           }
         ],
         "functions": [
@@ -168,7 +168,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask for their phone number and optionally an email address. Then proceed to provider scheduling."
+            "content": "Ask for their phone number and optionally an email address. Then use the record_contact function."
           }
         ],
         "functions": [
@@ -201,7 +201,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Offer available providers and times. Confirm selection and then proceed to email confirmation."
+            "content": "Offer available providers and times. After confirming the selection, use the schedule_appointment function."
           }
         ],
         "functions": [
@@ -234,7 +234,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Thank the patient and notify them that confirmation emails will be sent. Use send_email to complete the intake process."
+            "content": "Thank the patient and notify them that confirmation emails will be sent. Use the send_email function to complete the intake process."
           }
         ],
         "functions": [
@@ -270,4 +270,3 @@
       }
     }
   }
-  
