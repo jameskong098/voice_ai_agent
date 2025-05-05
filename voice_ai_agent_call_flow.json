@@ -220,7 +220,7 @@
                   },
                   "appointment_time": {
                     "type": "string",
-                    "description": "Scheduled appointment time"
+                    "description": "Scheduled appointment time. Make sure it is in this format: standard 24-hour format (YYYY-MM-DD HH:MM) so for example: April 18th, 2025 at 2:30 PM would be 2025-04-18 14:30"
                   }
                 },
                 "required": ["provider", "appointment_time"]
@@ -379,7 +379,7 @@
                 "properties": {
                   "provider": {
                     "type": "string",
-                    "description": "Corrected name of the provider (optional)"
+                     "description": "Correct scheduled appointment time. Make sure it is in this format: standard 24-hour format (YYYY-MM-DD HH:MM) so for example: April 18th, 2025 at 2:30 PM would be 2025-04-18 14:30"
                   },
                   "appointment_time": {
                     "type": "string",

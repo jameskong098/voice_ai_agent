@@ -424,7 +424,7 @@ async def send_email(args=None):
                 <h2>Appointment Details</h2>
                 <ul>
                     <li><strong>Provider:</strong> {call_data_store["global"]["scheduled_provider"]}</li>
-                    <li><strong>Date/Time:</strong> {appointment_time}</li>
+                    <li><strong>When:</strong> {appointment_time}</li>
                     <li><strong>Visit Reason:</strong> {call_data_store["global"].get("visit_reason", "N/A")}</li>
                 </ul>
             </div>
@@ -631,7 +631,7 @@ def status_page():
     </head>
     <body>
       <h1>✅ Voice AI Agent is Running</h1>
-      <p>If you see this page, ngrok is forwarding correctly.</p>
+      <p>If you see this page, the web server is running.</p>
     </body>
     </html>
     """
