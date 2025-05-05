@@ -183,7 +183,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                    "description": "Phone number"
+                    "description": "Phone number should be in this format: (XXX) XXX-XXXX."
                   },
                   "email": {
                     "type": "string",
@@ -201,7 +201,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Offer up best available providers and times (feel free to use fake data and make up doctors and times, just make it believable). After confirming the selection, use the schedule_appointment function."
+            "content": "Offer up best available providers and times (feel free to use fake data and make up doctors and times, just make it believable). After confirming the patient's selection, use the schedule_appointment function."
           }
         ],
         "functions": [
@@ -234,7 +234,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Summarize all the collected information for the patient: Name, Birthday, Insurance Provider, Payer ID, Referral Status, Referring Physician (if applicable), Reason for Visit, Address, Phone Number, Email (if provided), Scheduled Provider, and Appointment Time. Ask the patient explicitly if all these details are correct or if any changes are needed. If a specific detail needs correction (e.g., 'My birthday is wrong', 'The address needs updating'), use the corresponding function (`verify_identity`, `validate_address`, `record_insurance`, `record_referral`, `record_reason`, `record_contact`, `schedule_appointment`) to collect ONLY the corrected information for that specific detail. After a correction function is used, you will return to this confirmation step. If all details are confirmed as correct by the patient, thank them, inform them the intake process is complete, and then use the `send_email` function to finalize. Remember that your text is being fed to a TTS engine, so make the conversation flow natural and easy to understand."
+            "content": "Summarize all the collected information for the patient: Name, Birthday, Insurance Provider, Payer ID, Referral Status, Referring Physician (if applicable), Reason for Visit, Address, Phone Number, Email (if provided), Scheduled Provider, and Appointment Time. Ask the patient if all these details are correct or if any changes are needed. If a specific detail needs correction (e.g., 'My birthday is wrong', 'The address needs updating'), use the corresponding function (`verify_identity`, `validate_address`, `record_insurance`, `record_referral`, `record_reason`, `record_contact`, `schedule_appointment`) to collect ONLY the corrected information for that specific detail. After a correction function is used, you will return to this confirmation step. If all details are described as correct or acceptable by the patient, inform them the intake process is complete, and then use the `send_email` function to finalize. Remember that your text is being fed to a TTS engine, so make the conversation flow natural and easy to understand."
           }
         ],
         "functions": [
@@ -356,7 +356,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                    "description": "Corrected phone number (optional)"
+                      "description": "Corrected phone number (optional) in this format: (XXX) XXX-XXXX."
                   },
                   "email": {
                     "type": "string",

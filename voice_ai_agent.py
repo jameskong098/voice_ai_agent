@@ -710,10 +710,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 base_url=f"{OLLAMA_HOST}/v1"
             )
         else:
-            logger.info("Using OpenAI LLM with GPT-4o")
+            logger.info("Using OpenAI LLM with GPT-4o-mini")
             llm = OpenAILLMService(
                 api_key=OPENAI_API_KEY,
-                model="gpt-4o"
+                model="gpt-4o-mini"
             )
 
         stt = DeepgramSTTService(
