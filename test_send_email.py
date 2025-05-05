@@ -46,7 +46,7 @@ async def main():
         'has_referral': True,
         'referring_physician': "Dr. Sim Referral",
         'visit_reason': "Simulated Checkup",
-        'address': "123 Simulation St, Faketown, FS 54321 (Validated)",
+        'address': "123 Simulation St, Faketown, FS 54321",
         'phone': "555-987-6543",
         'email': TEST_RECIPIENT_EMAIL,
         'scheduled_provider': "Dr. Test Provider",

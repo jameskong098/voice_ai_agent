@@ -18,8 +18,10 @@ import ssl
 import sys
 import urllib.parse
 from contextlib import asynccontextmanager 
-from datetime import datetime
+from datetime import datetime, timedelta
+from email import encoders
 from email.message import EmailMessage
+from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -33,7 +35,9 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.responses import HTMLResponse
+from icalendar import Calendar, Event
 from loguru import logger
+import pytz
 
 # Pipecat Core Imports
 from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -291,10 +295,9 @@ async def send_email(args=None):
         logger.warning(f"Logo image not found at {image_path}. Email will be sent without logo.")
     # --- End Image Handling ---
 
-
-    # Format dates for display
+    # Format appointment time with ordinal but leave birthday in YYYY-MM-DD format
     appointment_time = format_date_with_ordinal(call_data_store["global"].get("scheduled_time", ""), include_time=True)
-    birth_date = format_date_with_ordinal(call_data_store["global"].get("birthday", ""), include_time=False)
+    birth_date = call_data_store["global"].get("birthday", "") 
 
     html_body = f"""
     <html>
@@ -316,9 +319,8 @@ async def send_email(args=None):
             <tr><th>Field</th><th>Information</th></tr>
     """
     
-    # Special handling for formatted dates
+    # Special handling for formatted dates - only appointment time gets special formatting
     special_formats = {
-        "birthday": birth_date,
         "scheduled_time": appointment_time
     }
     
@@ -328,7 +330,7 @@ async def send_email(args=None):
             continue
         formatted_key = key.replace('_', ' ').title()
         
-        # Use specially formatted values for dates
+        # Use specially formatted values for dates (except birthday)
         if key in special_formats:
             display_value = special_formats[key]
         else:
@@ -499,6 +501,57 @@ async def send_email(args=None):
     
     # Add the related part to the root message
     root_message.attach(related_part)
+    
+    # --- ICS Calendar Attachment ---
+    try:
+        appointment_datetime = datetime.strptime(call_data_store["global"]["scheduled_time"], "%Y-%m-%d %H:%M")
+        
+        # Use Eastern timezone for the appointment (consistent with EST in email display)
+        eastern = pytz.timezone('US/Eastern')
+        appointment_datetime_eastern = eastern.localize(appointment_datetime)
+        
+        cal = Calendar()
+        cal.add('prodid', '-//Kong Health Clinic//Appointment System//EN')
+        cal.add('version', '2.0')
+        cal.add('method', 'REQUEST')  
+        
+        event = Event()
+        event.add('summary', f"Appointment with {call_data_store['global']['scheduled_provider']} at Kong Health Clinic")
+        event.add('dtstart', appointment_datetime_eastern)
+        event.add('dtend', appointment_datetime_eastern + timedelta(hours=1))
+        event.add('dtstamp', datetime.now(pytz.UTC))
+        event.add('location', 'Kong Health Clinic, 123 Wellness Way, Suite 400, Boston, MA 02118')
+        
+        description = (f"Appointment for: {call_data_store['global']['name']}\n"
+                      f"Visit Reason: {call_data_store['global'].get('visit_reason', 'N/A')}\n\n"
+                      "Please arrive 15 minutes before your scheduled appointment time.\n"
+                      "If you need to reschedule, please call us at (555) 123-4567.")
+        event.add('description', description)
+        
+        organizer = f"mailto:{SENDER_EMAIL}"
+        event.add('organizer', organizer)
+        
+        # Add attendee (patient)
+        event.add('attendee', f"mailto:{call_data_store['global']['email']}")
+        
+        # Add unique identifier for the event
+        event.add('uid', f"{call_data_store['global']['name'].replace(' ', '_')}-{appointment_datetime.strftime('%Y%m%d%H%M')}@konghealthclinic.com")
+        
+        cal.add_component(event)
+        
+        ics_content = cal.to_ical()
+        ics_part = MIMEBase('application', 'text/calendar', method='REQUEST')
+        ics_part.set_payload(ics_content)
+        encoders.encode_base64(ics_part)
+        ics_part.add_header('Content-Disposition', 'attachment', filename='Kong_Health_Clinic_Appointment.ics')
+        ics_part.add_header('Content-Type', 'text/calendar; charset=UTF-8; method=REQUEST')
+        root_message.attach(ics_part)
+        
+        logger.info("Calendar attachment created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create calendar attachment: {e}")
+        # Continue without calendar attachment if there's an error
+    # --- End ICS Calendar Attachment ---
     
     # Send the email
     try:
