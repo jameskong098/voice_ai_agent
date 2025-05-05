@@ -87,7 +87,7 @@ CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY")
 CARTESIA_VOICE_ID = os.getenv("CARTESIA_VOICE_ID")
 
 # --- TTS Configuration ---
-USE_LOCAL_TTS = os.getenv("USE_LOCAL_TTS")
+USE_LOCAL_TTS = os.getenv("USE_LOCAL_TTS", "false").lower() == "true"
 PIPER_TTS_URL = os.getenv("PIPER_TTS_URL", "http://localhost:5000") 
 
 # --- Ollama Configuration ---

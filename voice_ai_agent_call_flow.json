@@ -183,7 +183,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                    "description": "Phone number should be in this format: (XXX) XXX-XXXX."
+                    "description": "Phone number should be in this format: (XXX) XXX-XXXX so for example (781) 428-5342. DO NOT ASK THE USER THIS, this is just for storing the data."
                   },
                   "email": {
                     "type": "string",
@@ -356,7 +356,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                      "description": "Corrected phone number (optional) in this format: (XXX) XXX-XXXX."
+                      "description": "Corrected phone number (optional) in this format: (XXX) XXX-XXXX so for example (781) 428-5342. DO NOT ASK THE USER THIS, this is just for storing the data."
                   },
                   "email": {
                     "type": "string",
