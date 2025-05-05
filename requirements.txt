@@ -12,6 +12,8 @@ resampy>=0.4.3
 # Speech Services
 cartesia>=1.4.0         # TTS
 deepgram-sdk>=3.8.0     # STT
+piper-tts>=0.0.3        # Local TTS option
+pyttsx3>=2.98           # Alternative local TTS
 
 # Language Models
 openai>=1.70.0
@@ -23,6 +25,14 @@ aiohttp-retry>=2.9.1
 requests>=2.32.0
 websockets>=13.1
 simple-websocket>=1.1.0
+
+# Additional Web Framework
+flask>=3.1.0
+flask-sock>=0.7.0
+
+# WebSocket and Async
+gevent>=25.4.0
+gevent-websocket>=0.10.1
 
 # Twilio Integration
 twilio>=9.5.0

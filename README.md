@@ -30,7 +30,7 @@ This project implements a voice-based AI agent designed to handle simulated pati
 *   **AI Voice Pipeline:** Pipecat AI
 *   **Telephony:** Twilio (Voice API, Media Streams)
 *   **Speech-to-Text (STT):** Deepgram
-*   **Text-to-Speech (TTS):** Cartesia
+*   **Text-to-Speech (TTS):** Cartesia or Piper
 *   **Language Model (LLM):** OpenAI or Ollama
 *   **Address Validation:** SmartyStreets (requires API keys)
 *   **Email:** Python `smtplib` (requires SMTP server configuration)
