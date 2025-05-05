@@ -5,7 +5,7 @@
         "role_messages": [
           {
             "role": "system",
-            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation, do not make up functions. Also do not tell the user that you will call a function as that is not necessary for the user to hear, you should just handle that in the background. Be respectful and methodical. Do not ramble on too much."
+            "content": "You are Ava, a friendly and professional patient intake agent for Kong Health Clinic. You must ALWAYS use one of the available functions to progress the conversation, do not make up functions. Also do not tell the user that you will call a function as that is not necessary for the user to hear, you should just handle that in the background. Do not ramble on too much. Keep in mind that your response will be read out by a TTS engine, so avoid using complex words or phrases and have a natural conversation flow. Always ask for the information in a friendly and professional manner. If they refuse to provide information, you can say that you cannot proceed without that information."
           }
         ],
         "task_messages": [
@@ -44,7 +44,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Ask for their insurance provider name and payer ID. After collecting this, use the record_insurance function."
+            "content": "Ask for their insurance provider name, payer ID. After collecting this, use the record_insurance function."
           }
         ],
         "functions": [
@@ -201,7 +201,7 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Offer available providers and times. After confirming the selection, use the schedule_appointment function."
+            "content": "Offer up best available providers and times (feel free to use fake data and make up doctors and times, just make it believable). After confirming the selection, use the schedule_appointment function."
           }
         ],
         "functions": [
@@ -234,16 +234,169 @@
         "task_messages": [
           {
             "role": "system",
-            "content": "Thank the patient and notify them that confirmation emails will be sent. Use the send_email function to complete the intake process."
+            "content": "Summarize all the collected information for the patient: Name, Birthday, Insurance Provider, Payer ID, Referral Status, Referring Physician (if applicable), Reason for Visit, Address, Phone Number, Email (if provided), Scheduled Provider, and Appointment Time. Ask the patient explicitly if all these details are correct or if any changes are needed. If a specific detail needs correction (e.g., 'My birthday is wrong', 'The address needs updating'), use the corresponding function (`verify_identity`, `validate_address`, `record_insurance`, `record_referral`, `record_reason`, `record_contact`, `schedule_appointment`) to collect ONLY the corrected information for that specific detail. After a correction function is used, you will return to this confirmation step. If all details are confirmed as correct by the patient, thank them, inform them the intake process is complete, and then use the `send_email` function to finalize. Remember that your text is being fed to a TTS engine, so make the conversation flow natural and easy to understand."
           }
         ],
         "functions": [
           {
             "type": "function",
             "function": {
+              "name": "verify_identity",
+              "handler": "__function__:verify_identity",
+              "description": "Correct the user's name or birthday.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "The caller's corrected full name (optional, only if correcting name)"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "description": "The caller's corrected date of birth (convert to YYYY-MM-DD format) (optional, only if correcting birthday)"
+                  }
+                },
+                "required": []
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "record_insurance",
+              "handler": "__function__:record_insurance",
+              "description": "Correct the user's insurance provider or payer ID.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "provider_name": {
+                    "type": "string",
+                    "description": "Corrected name of the insurance provider (optional)"
+                  },
+                  "payer_id": {
+                    "type": "string",
+                    "description": "Corrected insurance payer ID (optional)"
+                  }
+                },
+                "required": []
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "record_referral",
+              "handler": "__function__:record_referral",
+              "description": "Correct referral status or referring physician name.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "has_referral": {
+                    "type": "boolean",
+                    "description": "Corrected referral status"
+                  },
+                  "physician_name": {
+                    "type": "string",
+                    "description": "Corrected referring physician's name (if applicable)"
+                  }
+                },
+                "required": ["has_referral"]
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "record_reason",
+              "handler": "__function__:record_reason",
+              "description": "Correct the patient's chief complaint or reason for visit.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Corrected chief medical complaint or reason for visit"
+                  }
+                },
+                "required": ["reason"]
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "validate_address",
+              "handler": "__function__:validate_address",
+              "description": "Correct the user's address.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "address": {
+                    "type": "string",
+                    "description": "The caller's corrected full home address"
+                  }
+                },
+                "required": ["address"]
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "record_contact",
+              "handler": "__function__:record_contact",
+              "description": "Correct phone or email contact info.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Corrected phone number (optional)"
+                  },
+                  "email": {
+                    "type": "string",
+                    "description": "Corrected email address (optional)"
+                  }
+                },
+                "required": []
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
+              "name": "schedule_appointment",
+              "handler": "__function__:schedule_appointment",
+              "description": "Correct the appointment provider or time selection.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "description": "Corrected name of the provider (optional)"
+                  },
+                  "appointment_time": {
+                    "type": "string",
+                    "description": "Corrected scheduled appointment time (optional)"
+                  }
+                },
+                "required": []
+              },
+              "transition_to": "confirm_email"
+            }
+          },
+          {
+            "type": "function",
+            "function": {
               "name": "send_email",
               "handler": "__function__:send_email",
-              "description": "Send confirmation email to internal staff with appointment details.",
+              "description": "Finalize intake. Confirm details are correct and potentially send internal confirmation email. If the user previously did not provide an email address, skip this step and go straight to the end.",
               "parameters": {
                 "type": "object",
                 "properties": {},

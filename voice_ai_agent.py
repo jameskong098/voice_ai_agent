@@ -18,7 +18,11 @@ import ssl
 import sys
 import urllib.parse
 from contextlib import asynccontextmanager 
+from datetime import datetime
 from email.message import EmailMessage
+from email.mime.image import MIMEImage 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path 
 from typing import Dict, Any 
 
@@ -94,7 +98,6 @@ SMARTY_URL = os.getenv("SMARTY_URL")
 
 # --- Email Configuration ---
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-RECIPIENT_EMAILS = os.getenv("RECIPIENT_EMAILS", "").split(',')
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT", 587)
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
@@ -224,43 +227,292 @@ async def schedule_appointment(args: FlowArgs) -> SimpleResult:
     call_data_store["global"]['scheduled_time'] = time
     return SimpleResult(success=True, message="Appointment scheduled.")
 
-async def send_email(args: FlowArgs) -> SimpleResult:
-    """Send confirmation email."""
-    logger.info("Preparing to send confirmation email.")
-
-    if not all([SENDER_EMAIL, RECIPIENT_EMAILS, SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD]):
-        logger.warning("Email configuration incomplete. Skipping email.")
-        return SimpleResult(success=True, message="Email skipped due to configuration.")
-
-    call_info = call_data_store.get("global", {})
-    subject = "New Patient Intake Summary"
-    body_lines = ["Patient Intake Summary:\n"]
-    for key, value in call_info.items():
-        body_lines.append(f"{key.replace('_', ' ').title()}: {value}")
-    body = "\n".join(body_lines)
-
-    em = EmailMessage()
-    em['From'] = SENDER_EMAIL
-    em['To'] = RECIPIENT_EMAILS  
-    em['Subject'] = subject
-    em.set_content(body)
-
-    context = ssl.create_default_context()
+def format_date_with_ordinal(dt_str, include_time=True):
+    """Format a date string to a professional format with ordinal suffix."""
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as smtp:
-            smtp.starttls(context=context)
-            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
-            smtp.sendmail(SENDER_EMAIL, RECIPIENT_EMAILS, em.as_string())
-        logger.info(f"Confirmation email sent successfully to {', '.join(RECIPIENT_EMAILS)}.")
-        return SimpleResult(success=True, message="Confirmation email sent.")
-    except smtplib.SMTPException as e:
-        logger.error(f"Failed to send email: {e}")
-        return SimpleResult(success=False, message="Failed to send confirmation email.")
-    finally:
-        # Clean up stored data after attempting email
-        call_data_store.clear()
-        logger.info("Cleaned up stored data.")
+        # Try to parse the datetime string
+        if include_time:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        else:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d")
+        
+        # Get day with ordinal suffix
+        day = dt.day
+        if 4 <= day <= 20 or 24 <= day <= 30:
+            suffix = "th"
+        else:
+            suffix = ["st", "nd", "rd"][day % 10 - 1] if day % 10 < 4 else "th"
+        
+        # Format with day of week, month, day with suffix, year
+        if include_time:
+            # Include time with AM/PM
+            return dt.strftime("%A, %B ") + f"{day}{suffix}, {dt.year} at {dt.strftime('%I:%M %p')} EST"
+        else:
+            return dt.strftime("%A, %B ") + f"{day}{suffix}, {dt.year}"
+    
+    except (ValueError, TypeError):
+        # If parsing fails, return the original string
+        return dt_str
 
+async def send_email(args=None):
+    """Send a confirmation email to the patient with their appointment details."""
+    logger.info("Attempting to finalize intake and send internal notification.")
+    
+    # Check if patient provided an email. Skip internal email if not.
+    # Modify this condition if the internal email should *always* be sent.
+    if call_data_store["global"]["email"] == "N/A" or not call_data_store["global"]["email"]:
+        logger.info("Patient did not provide an email address. Skipping internal email notification.")
+        # Clean up stored data even if email is skipped
+        if "global" in call_data_store:
+            call_data_store.clear()
+            logger.info("Cleaned up stored data.")
+        return SimpleResult(success=True, message="Intake complete (internal email skipped).")
+
+    # Proceed with sending email if configuration is complete and patient email was provided
+    if not all([SENDER_EMAIL, SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD]):
+        logger.warning("Email configuration incomplete. Skipping email.")
+        # Clean up stored data even if email is skipped due to config
+        if "global" in call_data_store:
+            call_data_store.clear()
+            logger.info("Cleaned up stored data.")
+        return SimpleResult(success=True, message="Intake complete (email skipped due to configuration).")
+
+    subject = f"Patient Intake Summary - {call_data_store['global']['name']}"
+
+    # --- Image Handling ---
+    image_cid = "logo_image"
+    image_path = Path(__file__).parent / "assets" / "Kong_Health_Clinic_Banner.png" 
+    img_data = None
+    try:
+        with open(image_path, 'rb') as fp:
+            img_data = fp.read()
+        logger.info(f"Successfully read logo image from {image_path}")
+    except FileNotFoundError:
+        logger.warning(f"Logo image not found at {image_path}. Email will be sent without logo.")
+    # --- End Image Handling ---
+
+
+    # Format dates for display
+    appointment_time = format_date_with_ordinal(call_data_store["global"].get("scheduled_time", ""), include_time=True)
+    birth_date = format_date_with_ordinal(call_data_store["global"].get("birthday", ""), include_time=False)
+
+    html_body = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: sans-serif; line-height: 1.6; }}
+            table {{ border-collapse: collapse; width: 100%; max-width: 600px; margin-top: 20px; }}
+            th, td {{ text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }}
+            th {{ background-color: #f2f2f2; }}
+            .logo {{ max-width: 200px; height: auto; margin-bottom: 20px; }} /* Style for the logo */
+        </style>
+    </head>
+    <body>
+        {f'<img src="cid:{image_cid}" alt="Kong Health Clinic Logo" class="logo"><br>' if img_data else ''}
+        <h2>Patient Intake Summary</h2>
+        <p>Dear {call_data_store['global']['name']},</p>
+        <p>Thank you for completing the intake process with Kong Health Clinic. Here is a summary of the information provided:</p>
+        <table>
+            <tr><th>Field</th><th>Information</th></tr>
+    """
+    
+    # Special handling for formatted dates
+    special_formats = {
+        "birthday": birth_date,
+        "scheduled_time": appointment_time
+    }
+    
+    for key, value in call_data_store["global"].items():
+        # Skip email in the table body as it's the recipient
+        if key == 'email':
+            continue
+        formatted_key = key.replace('_', ' ').title()
+        
+        # Use specially formatted values for dates
+        if key in special_formats:
+            display_value = special_formats[key]
+        else:
+            display_value = value if value is not None else 'N/A'
+            
+        html_body += f"<tr><td>{formatted_key}</td><td>{display_value}</td></tr>\n"
+
+    html_body += """
+        </table>
+        <p>If any of this information looks incorrect, please let us know as soon as possible so we can update your records.</p>
+
+        <p>We’re looking forward to seeing you and making sure you receive the care you need.</p>
+
+        <p>Sincerely,<br>Kong Health Clinic</p>
+    </body>
+    <footer style="font-size: 0.9em; color: #666; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px;">
+        <p>Kong Health Clinic</p>
+        <p>123 Wellness Way, Suite 400<br>Boston, MA 02118</p>
+        <p>Phone: (617) 555-0199<br>Email: info@konghealthclinic.com</p>
+        <p>This message was sent by an automated system. Please do not reply directly to this email.</p>
+    </footer>
+    </html>
+    """
+
+    # Completely rebuild the email structure using explicit MIME parts
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email.mime.image import MIMEImage
+    
+    # Create the root message - use 'alternative' as the main content type
+    # This prioritizes HTML content over plain text in email clients
+    root_message = MIMEMultipart('alternative')
+    root_message["Subject"] = "Your Appointment Confirmation"
+    root_message["From"] = SENDER_EMAIL
+    root_message["To"] = call_data_store["global"]["email"]
+    
+    # Create the plain text version with formatted dates
+    text_content = f"""
+    Kong Health Clinic
+    Appointment Confirmation
+    
+    Thank you for scheduling your appointment with us!
+    
+    Details:
+    Name: {call_data_store["global"]["name"]}
+    Provider: {call_data_store["global"]["scheduled_provider"]}
+    Date/Time: {appointment_time}
+    Visit Reason: {call_data_store["global"].get("visit_reason", "N/A")}
+    
+    Please arrive 15 minutes before your appointment time.
+    """
+    
+    # Add plain text to the root message
+    plain_part = MIMEText(text_content, 'plain')
+    root_message.attach(plain_part)
+    
+    # Create the related part for HTML with inline images
+    related_part = MIMEMultipart('related')
+    
+    # Read the logo image
+    logo_path = Path(__file__).parent / "assets" / "Kong_Health_Clinic_Banner.png"
+    img_cid = "logo@konghealth.clinic"  # Content ID for the image
+    
+    # Create the HTML content with proper reference to the embedded image
+    html_content = f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; }}
+            .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+            .header {{ text-align: center; margin-bottom: 20px; }}
+            .details {{ background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+            .patient-info {{ background-color: #f0f7ff; padding: 15px; border-radius: 5px; }}
+            h1 {{ color: #2a5885; }}
+            h2 {{ color: #336699; margin-top: 20px; }}
+            table {{ width: 100%; border-collapse: collapse; }}
+            table td {{ padding: 8px; border-bottom: 1px solid #ddd; }}
+            td:first-child {{ font-weight: bold; width: 40%; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <img src="cid:{img_cid}" alt="Kong Health Clinic Logo" style="max-width:100%;">
+                <h1>Appointment Confirmation</h1>
+            </div>
+            <p>Dear {call_data_store["global"]["name"]},</p>
+            <p>Thank you for scheduling your appointment with us!</p>
+            
+            <div class="details">
+                <h2>Appointment Details</h2>
+                <ul>
+                    <li><strong>Provider:</strong> {call_data_store["global"]["scheduled_provider"]}</li>
+                    <li><strong>Date/Time:</strong> {appointment_time}</li>
+                    <li><strong>Visit Reason:</strong> {call_data_store["global"].get("visit_reason", "N/A")}</li>
+                </ul>
+            </div>
+            
+            <div class="patient-info">
+                <h2>Patient Information Summary</h2>
+                <table>
+                    <tr>
+                        <td>Name</td>
+                        <td>{call_data_store["global"].get("name", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Date of Birth</td>
+                        <td>{birth_date}</td>
+                    </tr>
+                    <tr>
+                        <td>Phone Number</td>
+                        <td>{call_data_store["global"].get("phone", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Email</td>
+                        <td>{call_data_store["global"].get("email", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Address</td>
+                        <td>{call_data_store["global"].get("address", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Insurance Provider</td>
+                        <td>{call_data_store["global"].get("insurance_provider", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Insurance Payer ID</td>
+                        <td>{call_data_store["global"].get("insurance_payer_id", "N/A")}</td>
+                    </tr>
+                    <tr>
+                        <td>Referral</td>
+                        <td>{"Yes" if call_data_store["global"].get("has_referral") else "No"}</td>
+                    </tr>
+                    <tr>
+                        <td>Referring Physician</td>
+                        <td>{call_data_store["global"].get("referring_physician", "N/A")}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p>Please arrive 15 minutes before your appointment time.</p>
+            <p>If you need to reschedule, please call us at (555) 123-4567.</p>
+            <p>We look forward to seeing you!</p>
+            <p><em>- The Kong Health Clinic Team</em></p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Create the HTML part
+    html_part = MIMEText(html_content, 'html')
+    
+    # Add the HTML part to the related part
+    related_part.attach(html_part)
+    
+    # Add the image to the related part if it exists
+    if logo_path.exists():
+        logger.info(f"Successfully read logo image from {logo_path}")
+        with open(logo_path, "rb") as img_file:
+            img_data = img_file.read()
+            img = MIMEImage(img_data)
+            img.add_header("Content-ID", f"<{img_cid}>")
+            # Setting Content-Disposition as inline is critical for embedded images
+            img.add_header("Content-Disposition", "inline", filename="logo.png")
+            related_part.attach(img)
+    else:
+        logger.warning(f"Logo image not found at {logo_path}")
+    
+    # Add the related part to the root message
+    root_message.attach(related_part)
+    
+    # Send the email
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, 587)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(root_message)
+        server.quit()
+        logger.info(f"Email sent successfully to {call_data_store['global']['email']}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+        return SimpleResult(success=False, message=f"Email failed to send: {e}")
+    
+    return SimpleResult(success=True, message="Email sent successfully")
 
 # --- Load and Prepare Flow Configuration ---
 
