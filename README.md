@@ -6,6 +6,8 @@
 
 This project implements a voice-based AI agent designed to handle simulated patient intake over a phone call. It uses Twilio for telephony, integrates with speech-to-text (STT) and text-to-speech (TTS) services, and leverages a large language model (LLM) for conversational interaction.
 
+[Video Demo](https://www.youtube.com/watch?v=hkxatmPiI08)
+
 ## Features
 
 *   **Handles Phone Calls:** Connects to Twilio via WebSocket to manage incoming voice calls and stream audio.
