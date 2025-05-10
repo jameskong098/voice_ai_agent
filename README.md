@@ -8,6 +8,8 @@ This project implements a voice-based AI agent designed to handle simulated pati
 
 [Video Demo](https://www.youtube.com/watch?v=hkxatmPiI08)
 
+![Video Demo Screenshot](assets/Video%20Screenshot.png)
+
 ## Features
 
 *   **Handles Phone Calls:** Connects to Twilio via WebSocket to manage incoming voice calls and stream audio.
