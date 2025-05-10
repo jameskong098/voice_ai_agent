@@ -101,7 +101,8 @@ This project implements a voice-based AI agent designed to handle simulated pati
 
     # Email Configuration
     SENDER_EMAIL=your_sender_email@example.com
-    RECIPIENT_EMAILS=recipient1@example.com,recipient2@example.com
+    RECIPIENT_EMAILS=recipient1@example.com,recipient2@example.com # Note: RECIPIENT_EMAILS is not used by the current send_email function, which sends to the patient's email. Fill in an email here for testing the sending email functionality.
+    TEST_RECIPIENT_EMAIL=test_recipient@example.com # Used by test_send_email.py
     SMTP_SERVER=smtp.example.com
     SMTP_PORT=587
     SMTP_USERNAME=your_smtp_username
@@ -215,6 +216,22 @@ python voice_ai_agent.py
 ```
 
 Now, call your Twilio phone number. Twilio will hit the `/voice` endpoint, which returns TwiML instructing Twilio to connect to the WebSocket server (`/ws`). The Pipecat pipeline will then handle the call.
+
+## Testing
+
+### Testing Email Functionality
+
+The project includes a script `test_send_email.py` to test the email sending functionality independently. This is useful for verifying your SMTP configuration and the email template.
+
+**To run the email test script:**
+
+1.  **Ensure your `.env` file is correctly configured** with all necessary `SENDER_EMAIL`, `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` variables.
+2.  **Set the `TEST_RECIPIENT_EMAIL`** variable in your `.env` file to the email address where you want to receive the test email.
+3.  **Run the script from the project root directory:**
+    ```bash
+    python test_send_email.py
+    ```
+    The script will simulate call data, attempt to send an email using the configured settings, and log the outcome. Check the console output and `test_send_email.log` for details.
 
 ## How it Works
 
